@@ -8,6 +8,7 @@ import {
   SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
+import { Button } from "./ui/button";
 
 const Header = () => {
   return (
@@ -23,9 +24,9 @@ const Header = () => {
           />
         </Link>
         <div>
-          <SignedOut>
+          <SignedOut className="flex items-center space-x-2">
             <SignInButton />
-            <SignUpButton></SignUpButton>
+            <Button variant={"secondary"}>Sign in</Button>
           </SignedOut>
           <SignedIn>
             <UserButton />

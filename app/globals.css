@@ -116,7 +116,16 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.gradient {
+  @apply bg-gradient-to-b from-emerald-500 to-teal-400
+}
+
+.gradient-title {
+  @apply bg-gradient-to-b from-emerald-500 to-teal-400 font-bold text-transparent bg-clip-text pb-1 pr-2;
 }
