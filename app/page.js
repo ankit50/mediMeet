@@ -7,8 +7,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { features } from "@/lib/data";
-import { ArrowRight } from "lucide-react";
+import { creditBenefits, features } from "@/lib/data";
+import { ArrowRight, Check, Stethoscope } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -105,6 +105,56 @@ export default function Home() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="py-20">
+        <div className="container mx-auto pax-4">
+          <div className="text-center mb-16">
+            <Badge
+              className="bg-emerald-900/30 border-emerald-700/30 px-4 py-2
+            text-emerald-400 text-sm font-medium mb-4"
+            >
+              Affordable HealthCare
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Consultation Packages
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Choose the perfect consultation package that fits your healthcare
+              needs
+            </p>
+          </div>
+
+          {/* pricing table */}
+          <div>
+            <Card className="mt-12 bg-muted/20 border-emerald-900/30">
+              <CardHeader>
+                <CardTitle className="text-xl font-semibold text-white flex items-center">
+                  <Stethoscope className="h-5 w-5 mr-2 text-emerald-400" />
+                  How our Credit System Works
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3">
+                  {creditBenefits.map((benefit, index) => {
+                    return (
+                      <li key={index} className="flex items-start">
+                        <div className="mr-3 mt-1 bg-emerald-900/20 p-1 rounded-full">
+                          <Check className="h-4 w-4 text-emerald-400" />
+                        </div>
+                        <p
+                          className="text-muted-foreground"
+                          dangerouslySetInnerHTML={{ __html: benefit }}
+                        />
+                      </li>
+                    );
+                  })}
+                </ul>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
