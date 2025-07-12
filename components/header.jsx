@@ -10,10 +10,22 @@ import {
 } from "@clerk/nextjs";
 import { Button } from "./ui/button";
 import { checkUser } from "@/lib/checkUser";
-import { Calendar, ShieldCheck, Stethoscope, User } from "lucide-react";
+import {
+  Badge,
+  Calendar,
+  CreditCard,
+  ShieldCheck,
+  Stethoscope,
+  User,
+} from "lucide-react";
+import { checkAndAllocateCredits } from "@/actions/credit";
+import UserCreditsBadge from "./UserCreditsBadge";
 
 const Header = async () => {
   const user = await checkUser();
+  if (user?.role === "PATIENT") {
+    await checkAndAllocateCredits(user);
+  }
   return (
     <header className="fixed top-0 w-full border-b backdrop-blur-md z-10 supports-[backdrop-filter]: bg-background/60">
       <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -88,6 +100,11 @@ const Header = async () => {
               </Link>
             )}
           </SignedIn>
+
+          {user && user.role !== "ADMIN" && (
+            <UserCreditsBadge user={JSON.parse(JSON.stringify(user))} />
+          )}
+
           <SignedOut>
             <SignInButton />
             <Button variant={"secondary"}>Sign in</Button>
