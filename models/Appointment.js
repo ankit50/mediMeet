@@ -1,4 +1,3 @@
-// models/appointment.model.js
 import mongoose from "mongoose";
 
 const appointmentSchema = new mongoose.Schema(
@@ -23,6 +22,7 @@ const appointmentSchema = new mongoose.Schema(
     notes: String,
     patientDescription: String,
     videoSessionId: String,
+    videoSessionToken: String,
   },
   {
     timestamps: true,
@@ -32,4 +32,7 @@ const appointmentSchema = new mongoose.Schema(
 // Index to quickly find appointments for a doctor
 appointmentSchema.index({ doctor: 1, startTime: 1 });
 
-export default mongoose.model("Appointment", appointmentSchema);
+appointmentSchema.index({ status: 1, startTime: 1 });
+
+export default mongoose.models.Appointment ||
+  mongoose.model("Appointment", appointmentSchema);

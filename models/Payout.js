@@ -26,5 +26,8 @@ const payoutSchema = new mongoose.Schema(
 );
 
 // Index to quickly find payouts for a doctor
+
+payoutSchema.index({ status: 1, createdAt: 1 });
 payoutSchema.index({ doctor: 1, status: 1 });
-export default mongoose.model("Payout", payoutSchema);
+
+export default mongoose.models.Payout || mongoose.model("Payout", payoutSchema);

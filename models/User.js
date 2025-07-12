@@ -1,21 +1,6 @@
 import mongoose from "mongoose";
 
-// This is a sub-document schema. It does NOT get its own model.
-// It will be embedded directly into the User document for doctors.
-const availabilitySchema = new mongoose.Schema(
-  {
-    startTime: { type: Date, required: true },
-    endTime: { type: Date, required: true },
-    status: {
-      type: String,
-      enum: ["AVAILABLE", "BOOKED", "BLOCKED"],
-      default: "AVAILABLE",
-    },
-  },
-  { _id: false }
-); // _id is not needed for embedded sub-documents.
-
-const userSchema = new Schema(
+const userSchema = new mongoose.Schema(
   {
     clerkUserId: {
       type: String,
@@ -52,12 +37,44 @@ const userSchema = new Schema(
       enum: ["PENDING", "VERIFIED", "REJECTED"],
       default: "PENDING",
     },
-    // ✨ EMBEDDED DATA: A doctor's availability is part of their profile.
-    availabilities: [availabilitySchema],
   },
   {
     // Mongoose automatically adds and manages `createdAt` and `updatedAt`
     timestamps: true,
   }
 );
-export default mongoose.model("User", userSchema);
+// Virtual relations
+userSchema.virtual("patientAppointments", {
+  ref: "Appointment",
+  localField: "_id",
+  foreignField: "patient",
+});
+
+userSchema.virtual("doctorAppointments", {
+  ref: "Appointment",
+  localField: "_id",
+  foreignField: "doctor",
+});
+
+userSchema.virtual("availabilities", {
+  ref: "Availability",
+  localField: "_id",
+  foreignField: "doctor",
+});
+
+userSchema.virtual("transactions", {
+  ref: "CreditTransaction",
+  localField: "_id",
+  foreignField: "user",
+});
+
+userSchema.virtual("payouts", {
+  ref: "Payout",
+  localField: "_id",
+  foreignField: "doctor",
+});
+
+userSchema.set("toObject", { virtuals: true });
+userSchema.set("toJSON", { virtuals: true });
+
+export default mongoose.models.User || mongoose.model("User", userSchema);

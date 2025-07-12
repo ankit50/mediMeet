@@ -24,5 +24,5 @@ const creditTransactionSchema = new mongoose.Schema(
     timestamps: { createdAt: true, updatedAt: false }, // Only need createdAt
   }
 );
-
-export default mongoose.model("CreditTransaction", creditTransactionSchema);
+export default mongoose.models.CreditTransaction ||
+  mongoose.model("CreditTransaction", creditTransactionSchema);
