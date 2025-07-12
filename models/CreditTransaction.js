@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const creditTransactionSchema = new mongoose.Schema(
   {
     user: {
-      type: Schema.Types.ObjectId, // Reference to the user
+      type: mongoose.Schema.Types.ObjectId, // Reference to the user
       ref: "User",
       required: true,
       index: true,

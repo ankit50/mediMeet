@@ -3,12 +3,12 @@ import mongoose from "mongoose";
 const appointmentSchema = new mongoose.Schema(
   {
     patient: {
-      type: Schema.Types.ObjectId, // Standard Mongoose reference
+      type: mongoose.Schema.Types.ObjectId, // Standard Mongoose reference
       ref: "User",
       required: true,
     },
     doctor: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },

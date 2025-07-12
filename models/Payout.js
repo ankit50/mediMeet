@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const payoutSchema = new mongoose.Schema(
   {
     doctor: {
-      type: Schema.Types.ObjectId, // Reference to the doctor
+      type: mongoose.Schema.Types.ObjectId, // Reference to the doctor
       ref: "User",
       required: true,
     },
