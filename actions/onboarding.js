@@ -40,7 +40,7 @@ export async function setUserRole(formData) {
       await User.findOneAndUpdate(
         { clerkUserId: userId },
         {
-          role: "PATIENT",
+          role: "DOCTOR",
           specialty,
           experience,
           credentialUrl,

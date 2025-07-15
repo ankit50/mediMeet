@@ -31,7 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 const doctorFormSchema = z.object({
-  speciality: z.string().min(1, "Speciality is required"),
+  specialty: z.string().min(1, "specialty is required"),
   experience: z.number().min(1, "Experience must be at least one year"),
   credentialUrl: z.url().min(1),
   description: z
@@ -55,12 +55,24 @@ const OnboardingPage = () => {
     resolver: zodResolver(doctorFormSchema),
   });
 
-  const specialityValue = watch("speciality");
+  const specialtyValue = watch("specialty");
 
   const handlePatientSelection = async () => {
     if (loading) return;
     const formData = new FormData();
     formData.append("role", "PATIENT");
+    await submitUserRole(formData);
+  };
+
+  const onDoctorSubmit = async (data) => {
+    if (loading) return;
+    const formData = new FormData();
+    formData.append("role", "DOCTOR");
+    formData.append("specialty", data.specialty);
+    formData.append("experience", data.experience.toString());
+    formData.append("credentialUrl", data.credentialUrl);
+    formData.append("description", data.description);
+
     await submitUserRole(formData);
   };
 
@@ -144,15 +156,15 @@ const OnboardingPage = () => {
             </CardDescription>
           </div>
 
-          <form className="space-y-6">
+          <form className="space-y-6" onSubmit={handleSubmit(onDoctorSubmit)}>
             <div className="space-y-2">
-              <Label htmlFor="speciality">Medical Speciality</Label>
+              <Label htmlFor="specialty">Medical specialty</Label>
               <Select
-                value={specialityValue}
-                onValueChange={(value) => setValue("speciality", value)}
+                value={specialtyValue}
+                onValueChange={(value) => setValue("specialty", value)}
               >
-                <SelectTrigger id="speciality">
-                  <SelectValue placeholder="Select Your speciality" />
+                <SelectTrigger id="specialty">
+                  <SelectValue placeholder="Select Your specialty" />
                 </SelectTrigger>
                 <SelectContent>
                   {SPECIALTIES.map((spec) => {
@@ -167,9 +179,9 @@ const OnboardingPage = () => {
                   })}
                 </SelectContent>
               </Select>
-              {errors.speciality && (
+              {errors.specialty && (
                 <p className="text-sm font-medium text-red-500 mt-1">
-                  {errors.speciality.message}
+                  {errors.specialty.message}
                 </p>
               )}
             </div>
@@ -241,7 +253,7 @@ const OnboardingPage = () => {
                     Processing....
                   </>
                 ) : (
-                  "Conitnue as Patient"
+                  "Submit for verification"
                 )}
               </Button>
             </div>
