@@ -47,6 +47,7 @@ export async function getVerifiedDoctors() {
       role: "DOCTOR",
       verificationStatus: "VERIFIED",
     }).sort({ name: 1 });
+    return { doctors: verifiedDoctors };
   } catch (error) {
     console.error("Failed to get verified doctors:", error);
     return { error: "Failed to fetch verified doctors" };
