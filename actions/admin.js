@@ -1,7 +1,8 @@
-"use Server";
+"use server";
 import { connectDB } from "@/lib/dbConnect";
 import User from "@/models/User";
 import { auth } from "@clerk/nextjs/server";
+import { revalidatePath } from "next/cache";
 
 //verify is User has admin role
 export async function verifyAdmin() {
@@ -49,5 +50,64 @@ export async function getVerifiedDoctors() {
   } catch (error) {
     console.error("Failed to get verified doctors:", error);
     return { error: "Failed to fetch verified doctors" };
+  }
+}
+
+//Update a doctor's verification status
+export async function updateDoctorStatus(formData) {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  const doctorId = formData.get("doctorId");
+  const status = formData.get("status");
+
+  if (!doctorId || !["VERIFIED", "REJECTED"].includes(status)) {
+    throw new Error("Invalid input");
+  }
+
+  try {
+    await connectDB();
+    await User.updateOne(
+      { _id: doctorId },
+      { $set: { verificationStatus: status } }
+    );
+
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to update doctor status:", error);
+    throw new Error(`Failed to update doctor status: ${error.message}`);
+  }
+}
+
+//Suspends or reinstates a doctor
+export async function updateDoctorActiveStatus(formData) {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  const doctorId = formData.get("doctorId");
+  const suspend = formData.get("suspend") === "true";
+
+  if (!doctorId) {
+    throw new Error("Doctor ID is required");
+  }
+
+  try {
+    const status = suspend ? "PENDING" : "VERIFIED";
+
+    await User.updateOne(
+      {
+        _id: doctorId,
+      },
+      {
+        $set: { verificationStatus: status },
+      }
+    );
+
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to update doctor active status:", error);
+    throw new Error(`Failed to update doctor status: ${error.message}`);
   }
 }
