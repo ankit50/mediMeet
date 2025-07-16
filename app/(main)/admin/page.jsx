@@ -17,7 +17,11 @@ const AdminPage = async () => {
         />
       </TabsContent>
       <TabsContent className="border-none p-0" value="doctors">
-        <VerifiedDoctors doctors={verifiedDoctrorsData.doctors || []} />
+        <VerifiedDoctors
+          doctors={
+            JSON.parse(JSON.stringify(verifiedDoctrorsData.doctors)) || []
+          }
+        />
       </TabsContent>
     </div>
   );
