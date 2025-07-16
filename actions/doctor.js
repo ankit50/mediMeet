@@ -40,7 +40,7 @@ export async function setAvailabilitySlots(formData) {
 
     // Check if the doctor already has slots
     const existingSlots = await Availability.find({
-      doctorId: doctor._id,
+      doctor: doctor._id,
     });
 
     // If slots exist, delete them all (we're replacing them)
