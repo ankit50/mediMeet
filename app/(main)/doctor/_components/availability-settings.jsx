@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import useFetch from "@/hooks/use-fetch";
+import { format } from "date-fns";
 import { AlertCircle, Clock, Loader2, Plus } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -125,7 +126,7 @@ const AvailabilitySettings = ({ slots }) => {
                       </div>
                       <div>
                         <p className="text-white font-medium">
-                          {formatTimeString(slot.startTime)} -{" "}
+                          {formatTimeString(slot.startTime)} -
                           {formatTimeString(slot.endTime)}
                         </p>
                         <p className="text-xs text-muted-foreground">
