@@ -49,7 +49,9 @@ export default async function DoctorDashboardPage() {
           todo
         </TabsContent>
         <TabsContent value="availability" className="border-none p-0">
-          <AvailabilitySettings slots={availabilityData.slots || []} />
+          <AvailabilitySettings
+            slots={JSON.parse(JSON.stringify(availabilityData.slots)) || []}
+          />
         </TabsContent>
       </div>
     </Tabs>

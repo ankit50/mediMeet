@@ -58,20 +58,29 @@ export async function setAvailabilitySlots(formData) {
     }
 
     // Create new availability slot
-    const newSlot = await Availability.create({
-      data: {
-        doctorId: doctor._id,
-        startTime: new Date(startTime),
-        endTime: new Date(endTime),
-        status: "AVAILABLE",
-      },
+    const newSlotDoc = await Availability.create({
+      doctor: doctor._id,
+      startTime,
+      endTime,
+      status: "AVAILABLE",
     });
+
+    // Convert Mongoose document to plain object
+    const newSlot = newSlotDoc.toObject();
+
+    // Manually convert non-serializable fields
+    newSlot._id = newSlot._id.toString();
+    newSlot.doctor = newSlot.doctor.toString();
+    newSlot.startTime = newSlot.startTime.toISOString();
+    newSlot.endTime = newSlot.endTime.toISOString();
+    newSlot.createdAt = newSlot.createdAt.toISOString();
+    newSlot.updatedAt = newSlot.updatedAt.toISOString();
 
     revalidatePath("/doctor");
     return { success: true, slot: newSlot };
   } catch (error) {
     console.error("Failed to set availability slots:", error);
-    throw new Error("Failed to set availability: " + error.message);
+    throw new Error("Failed to set availability: eerf" + error.message);
   }
 }
 
@@ -85,6 +94,7 @@ export async function getDoctorAvailability() {
   }
 
   try {
+    await connectDB();
     const doctor = await User.findOne({
       clerkUserId: userId,
       role: "DOCTOR",
@@ -95,7 +105,7 @@ export async function getDoctorAvailability() {
     }
 
     const availabilitySlots = await Availability.find({
-      doctorId: doctor._id,
+      doctor: doctor._id,
     }).sort({ startTime: 1 });
 
     return { slots: availabilitySlots };

@@ -11,16 +11,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import useFetch from "@/hooks/use-fetch";
-import { AlertCircle, Clock, Plus } from "lucide-react";
-import React, { useState } from "react";
+import { AlertCircle, Clock, Loader2, Plus } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 const AvailabilitySettings = ({ slots }) => {
+  console.log(slots);
   const [showForm, setShowForm] = useState(false);
 
   // Custom hook for server action
   const { loading, fn: submitSlots, data } = useFetch(setAvailabilitySlots);
 
+  // React Hook Form
   const {
     register,
     handleSubmit,
@@ -31,6 +34,59 @@ const AvailabilitySettings = ({ slots }) => {
       endTime: "",
     },
   });
+
+  function createLocalDateFromTime(timeStr) {
+    const [hours, minutes] = timeStr.split(":").map(Number);
+    const now = new Date();
+    const date = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      hours,
+      minutes
+    );
+    return date;
+  }
+
+  // Handle slot submission
+  const onSubmit = async (data) => {
+    if (loading) return;
+
+    const formData = new FormData();
+
+    const today = new Date().toISOString().split("T")[0];
+
+    // Create date objects
+    const startDate = createLocalDateFromTime(data.startTime);
+    const endDate = createLocalDateFromTime(data.endTime);
+
+    if (startDate >= endDate) {
+      toast.error("End time must be after start time");
+      return;
+    }
+
+    // Add to form data
+    formData.append("startTime", startDate.toISOString());
+    formData.append("endTime", endDate.toISOString());
+
+    await submitSlots(formData);
+  };
+
+  useEffect(() => {
+    if (data && data?.success) {
+      setShowForm(false);
+      toast.success("Availability slots updated successfully");
+    }
+  }, [data]);
+
+  // Format time string for display
+  const formatTimeString = (dateString) => {
+    try {
+      return format(new Date(dateString), "h:mm a");
+    } catch (e) {
+      return "Invalid time";
+    }
+  };
 
   return (
     <Card className="border-emerald-900/20">
@@ -61,7 +117,7 @@ const AvailabilitySettings = ({ slots }) => {
                 <div className="space-y-3">
                   {slots.map((slot) => (
                     <div
-                      key={slot.id}
+                      key={slot._id}
                       className="flex items-center p-3 rounded-md bg-muted/20 border border-emerald-900/20"
                     >
                       <div className="bg-emerald-900/20 p-2 rounded-full mr-3">
@@ -92,7 +148,7 @@ const AvailabilitySettings = ({ slots }) => {
           </>
         ) : (
           <form
-            //onSubmit={handleSubmit(onSubmit)}
+            onSubmit={handleSubmit(onSubmit)}
             className="space-y-4 border border-emerald-900/20 rounded-md p-4"
           >
             <h3 className="text-lg font-medium text-white mb-2">
