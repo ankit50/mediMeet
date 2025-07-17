@@ -253,7 +253,23 @@ export async function bookAppointment(formData) {
     });
 
     revalidatePath("/appointments");
-    return { success: true, appointment: appointment };
+    // Inline manual conversion to plain object:
+    return {
+      success: true,
+      appointment: {
+        id: appointment._id.toString(),
+        patient: appointment.patient.toString(),
+        doctor: appointment.doctor.toString(),
+        startTime: appointment.startTime.toISOString(),
+        endTime: appointment.endTime.toISOString(),
+        patientDescription: appointment.patientDescription,
+        status: appointment.status,
+        videoSessionId: appointment.videoSessionId,
+        createdAt: appointment.createdAt.toISOString(),
+        updatedAt: appointment.updatedAt.toISOString(),
+      },
+    };
+    //return { success: true, appointment: appointment };
   } catch (error) {
     console.error("Failed to book appointment:", error);
     throw new Error("Failed to book appointment:" + error.message);

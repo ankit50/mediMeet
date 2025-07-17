@@ -121,8 +121,6 @@ export async function getDoctorAvailability() {
     }));
 
     return { slots: plainSlots };
-
-    return { slots: plainSlots };
   } catch (error) {
     throw new Error("Failed to fetch availability slots " + error.message);
   }
@@ -161,6 +159,7 @@ export async function getDoctorAppointments() {
       startTime: doc.startTime,
       endTime: doc.endTime,
       status: doc.status,
+      notes: doc.notes,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
       patient: {
@@ -212,8 +211,8 @@ export async function cancelAppointment(formData) {
 
     // Verify the user is either the doctor or the patient for this appointment
     if (
-      appointment.doctorId !== user._id &&
-      appointment.patientId !== user._id
+      appointment.doctor._id.toString() !== user._id.toString() &&
+      appointment.patient._id.toString() !== user._id.toString()
     ) {
       throw new Error("You are not authorized to cancel this appointment");
     }
@@ -230,7 +229,7 @@ export async function cancelAppointment(formData) {
       await CreditTransaction.create(
         [
           {
-            userId: appointment.patient._id,
+            user: appointment.patient._id,
             amount: 2,
             type: "APPOINTMENT_DEDUCTION",
           },
@@ -242,7 +241,7 @@ export async function cancelAppointment(formData) {
       await CreditTransaction.create(
         [
           {
-            userId: appointment.doctor._id,
+            user: appointment.doctor._id,
             amount: -2,
             type: "APPOINTMENT_DEDUCTION",
           },
@@ -326,11 +325,26 @@ export async function addAppointmentNotes(formData) {
     // Update the appointment notes
     appointment.notes = notes;
     await appointment.save();
+    // ✅ Convert appointment to plain object manually
+    const plainAppointment = {
+      id: appointment._id.toString(),
+      patient: appointment.patient.toString(),
+      doctor: appointment.doctor.toString(),
+      startTime: appointment.startTime.toISOString(),
+      endTime: appointment.endTime.toISOString(),
+      patientDescription: appointment.patientDescription,
+      notes: appointment.notes,
+      status: appointment.status,
+      videoSessionId: appointment.videoSessionId,
+      createdAt: appointment.createdAt.toISOString(),
+      updatedAt: appointment.updatedAt.toISOString(),
+    };
 
     revalidatePath("/doctor");
-    return { success: true, appointment };
+
+    return { success: true, appointment: plainAppointment };
   } catch (error) {
-    throw new Error("Failed to ipdate notes" + error.message);
+    throw new Error("Failed to update notes" + error.message);
   }
 }
 

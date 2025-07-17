@@ -18,7 +18,6 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 const AvailabilitySettings = ({ slots }) => {
-  console.log(slots);
   const [showForm, setShowForm] = useState(false);
 
   // Custom hook for server action
@@ -118,7 +117,7 @@ const AvailabilitySettings = ({ slots }) => {
                 <div className="space-y-3">
                   {slots.map((slot) => (
                     <div
-                      key={slot._id}
+                      key={slot.id}
                       className="flex items-center p-3 rounded-md bg-muted/20 border border-emerald-900/20"
                     >
                       <div className="bg-emerald-900/20 p-2 rounded-full mr-3">

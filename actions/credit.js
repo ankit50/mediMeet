@@ -81,8 +81,8 @@ export async function checkAndAllocateCredits(user) {
     await session.commitTransaction();
     committed = true;
 
-    revalidatePath("/doctors");
-    revalidatePath("/appointments");
+    // revalidatePath("/doctors");
+    // revalidatePath("/appointments");
 
     return updatedUser;
   } catch (err) {
