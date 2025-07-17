@@ -4,7 +4,7 @@ import { connectDB } from "@/lib/dbConnect";
 import Appointment from "@/models/Appointment";
 import Availability from "@/models/Availability";
 import User from "@/models/User";
-import { addDays, endOfDay, format } from "date-fns";
+import { addDays, addMinutes, endOfDay, format, isBefore } from "date-fns";
 import { deductCreditsForAppointment } from "./credit";
 import { revalidatePath } from "next/cache";
 import { Auth } from "@vonage/auth";
@@ -23,13 +23,13 @@ export async function getDoctorById(doctorId) {
   try {
     await connectDB();
     const doctor = await User.findOne({
-      id: doctorId,
+      _id: doctorId,
       role: "DOCTOR",
       verificationStatus: "VERIFIED",
     });
 
     if (!doctor) {
-      throw new Error("Doctor not found");
+      throw new Error("Doctor not founded");
     }
     return { doctor };
   } catch (error) {
@@ -44,7 +44,7 @@ export async function getAvailableTimeSlots(doctorId) {
     // Validate doctor existence and verification
     await connectDB();
     const doctor = await User.findOne({
-      id: doctorId,
+      _id: doctorId,
       role: "DOCTOR",
       verificationStatus: "VERIFIED",
     });
