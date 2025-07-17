@@ -9,7 +9,7 @@ import { deductCreditsForAppointment } from "./credit";
 import { revalidatePath } from "next/cache";
 import { Auth } from "@vonage/auth";
 import { Vonage } from "@vonage/server-sdk";
-
+import { auth } from "@clerk/nextjs/server";
 // Initialize Vonage Video API client
 const credentials = new Auth({
   applicationId: process.env.NEXT_PUBLIC_VONAGE_APPLICATION_ID,
