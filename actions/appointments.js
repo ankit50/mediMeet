@@ -268,3 +268,94 @@ export async function createVideoSession() {
     throw new Error("Failed to create video session: " + error.message);
   }
 }
+
+export async function generateVideoToken(formData) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  try {
+    await connectDB();
+    const user = await User.findOne({
+      clerkUserId: userId,
+    });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const appointmentId = formData.get("appointmentId");
+
+    if (!appointmentId) {
+      throw new Error("Appointment ID is required");
+    }
+
+    // Find the appointment and verify the user is part of it
+    const appointment = await Appointment.findOne({
+      _id: appointmentId,
+    });
+
+    if (!appointment) {
+      throw new Error("Appointment not found");
+    }
+
+    // Verify the user is either the doctor or the patient for this appointment
+    if (
+      appointment.doctorId !== user._id &&
+      appointment.patientId !== user._id
+    ) {
+      throw new Error("You are not authorized to join this call");
+    }
+
+    // Verify the appointment is scheduled
+    if (appointment.status !== "SCHEDULED") {
+      throw new Error("This appointment is not currently scheduled");
+    }
+
+    // Verify the appointment is within a valid time range (e.g., starting 5 minutes before scheduled time)
+    const now = new Date();
+    const appointmentTime = new Date(appointment.startTime);
+    const timeDifference = (appointmentTime - now) / (1000 * 60); // difference in minutes
+
+    if (timeDifference > 30) {
+      throw new Error(
+        "The call will be available 30 minutes before the scheduled time"
+      );
+    }
+
+    // Generate a token for the video session
+    // Token expires 2 hours after the appointment start time
+    const appointmentEndTime = new Date(appointment.endTime);
+    const expirationTime =
+      Math.floor(appointmentEndTime.getTime() / 1000) + 60 * 60; // 1 hour after end time
+
+    // Use user's name and role as connection data
+    const connectionData = JSON.stringify({
+      name: user.name,
+      role: user.role,
+      userId: user._id,
+    });
+
+    // Generate the token with appropriate role and expiration
+    const token = vonage.video.generateClientToken(appointment.videoSessionId, {
+      role: "publisher", // Both doctor and patient can publish streams
+      expireTime: expirationTime,
+      data: connectionData,
+    });
+
+    // Update the appointment with the token
+    appointment.videoSessionToken = token;
+    await appointment.save();
+
+    return {
+      success: true,
+      videoSessionId: appointment.videoSessionId,
+      token: token,
+    };
+  } catch (error) {
+    console.error("Failed to generate video token:", error);
+    throw new Error("Failed to generate video token:" + error.message);
+  }
+}

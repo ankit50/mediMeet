@@ -1,6 +1,8 @@
 "use server";
 import { connectDB } from "@/lib/dbConnect";
+import Appointment from "@/models/Appointment";
 import Availability from "@/models/Availability";
+import CreditTransaction from "@/models/CreditTransaction";
 import User from "@/models/User";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
@@ -84,8 +86,7 @@ export async function setAvailabilitySlots(formData) {
   }
 }
 
-//Get doctor's current availability slots
-
+//Get doctto's time
 export async function getDoctorAvailability() {
   const { userId } = await auth();
 
@@ -115,7 +116,236 @@ export async function getDoctorAvailability() {
 }
 
 //Get doctor's upcoming appointments
-
 export async function getDoctorAppointments() {
-  return [];
+  const { userId } = await auth();
+
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+  try {
+    await connectDB();
+    const doctor = await User.findOne({
+      clerkUserId: userId,
+      role: "DOCTOR",
+    });
+    if (!doctor) {
+      throw new Error("Doctor not found");
+    }
+    const appointments = await Appointment.find({
+      doctor: doctor._id,
+      status: { $in: ["SCHEDULED"] },
+    })
+      .populate("patient")
+      .sort({ startTime: 1 });
+    return { appointments };
+  } catch (error) {
+    throw new Error("Failed to fetch appointments " + error.message);
+  }
+}
+
+//Cancel an appointment (can be done by both doctor and patient)
+export async function cancelAppointment(formData) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  try {
+    await connectDB();
+    const user = await User.findOne({
+      clerkUserId: userId,
+    });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const appointmentId = formData.get("appointmentId");
+
+    if (!appointmentId) {
+      throw new Error("Appointment ID is required");
+    }
+
+    // Find the appointment with both patient and doctor details
+    const appointment = await Appointment.findById(appointmentId)
+      .populate("patient")
+      .populate("doctor");
+
+    if (!appointment) {
+      throw new Error("Appointment not found");
+    }
+
+    // Verify the user is either the doctor or the patient for this appointment
+    if (
+      appointment.doctorId !== user._id &&
+      appointment.patientId !== user._id
+    ) {
+      throw new Error("You are not authorized to cancel this appointment");
+    }
+
+    // Start pseudo transaction
+    const session = await Appointment.startSession();
+    session.startTransaction();
+    try {
+      // Cancel appointment
+      appointment.status = "CANCELLED";
+      await appointment.save({ session });
+
+      // Create credit transaction: refund patient
+      await CreditTransaction.create(
+        [
+          {
+            userId: appointment.patient._id,
+            amount: 2,
+            type: "APPOINTMENT_DEDUCTION",
+          },
+        ],
+        { session }
+      );
+
+      // Create credit transaction: deduct doctor
+      await CreditTransaction.create(
+        [
+          {
+            userId: appointment.doctor._id,
+            amount: -2,
+            type: "APPOINTMENT_DEDUCTION",
+          },
+        ],
+        { session }
+      );
+
+      // Update patient credit
+      await User.findByIdAndUpdate(
+        appointment.patient._id,
+        {
+          $inc: { credits: 2 },
+        },
+        { session }
+      );
+
+      // Update doctor credit
+      await User.findByIdAndUpdate(
+        appointment.doctor._id,
+        {
+          $inc: { credits: -2 },
+        },
+        { session }
+      );
+
+      await session.commitTransaction();
+      session.endSession();
+    } catch (err) {
+      await session.abortTransaction();
+      session.endSession();
+      throw err;
+    }
+
+    // Revalidate based on role
+    if (user.role === "DOCTOR") {
+      revalidatePath("/doctor");
+    } else if (user.role === "PATIENT") {
+      revalidatePath("/appointments");
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to cancel appointment:", error);
+    throw new Error("Failed to cancel appointment: " + error.message);
+  }
+}
+
+//Add appointment notes
+export async function addAppointmentNotes(formData) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+  try {
+    await connectDB();
+    const doctor = await User.findOne({
+      clerkUserId: userId,
+      role: "DOCTOR",
+    });
+    if (!doctor) {
+      throw new Error("Doctor not found");
+    }
+
+    const appointmentId = formData.get("appointmentId");
+    const notes = formData.get("notes");
+
+    if (!appointmentId || !notes) {
+      throw new Error("Appointment ID and notes are required");
+    }
+
+    // Verify the appointment belongs to this doctor
+    const appointment = await Appointment.findOne({
+      _id: appointmentId,
+      doctor: doctor._id,
+    });
+
+    if (!appointment) {
+      throw new Error("Appointment not found");
+    }
+    // Update the appointment notes
+    appointment.notes = notes;
+    await appointment.save();
+
+    revalidatePath("/doctor");
+    return { success: true, appointment };
+  } catch (error) {
+    throw new Error("Failed to ipdate notes" + error.message);
+  }
+}
+
+//Mark appointment competed
+export async function markAppointmentCompleted(formData) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+  try {
+    await connectDB();
+    const doctor = await User.findOne({
+      clerkUserId: userId,
+      role: "DOCTOR",
+    });
+    if (!doctor) {
+      throw new Error("Doctor not found");
+    }
+    const appointmentId = formData.get("appointmentId");
+    if (!appointmentId) {
+      throw new Error("Appointment ID is required");
+    }
+
+    // Verify the appointment belongs to this doctor
+    const appointment = await Appointment.findOne({
+      _id: appointmentId,
+      doctor: doctor._id,
+    }).populate("patient");
+
+    if (!appointment) {
+      throw new Error("Appointment not found");
+    }
+    if (appointment.status !== "SCHEDULED") {
+      throw new Error("Only scheduled appointments can be marked as completed");
+    }
+    const now = new Date();
+    const appointmentEndTime = new Date(appointment.endTime);
+
+    if (now < appointmentEndTime) {
+      throw new Error(
+        "Cannot mark appointment as completed before the scheduled end time"
+      );
+    }
+    appointment.status = "COMPLETED";
+    await appointment.save();
+    revalidatePath("/doctor");
+    return { success: true, appointment };
+  } catch (error) {
+    throw new Error("Failed to ipdate notes" + error.message);
+  }
 }
