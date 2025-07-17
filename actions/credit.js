@@ -12,7 +12,8 @@ const PLAN_CREDITS = {
   standard: 10,
   premium: 24,
 };
-
+// Each appointment costs 2 credits
+const APPOINTMENT_CREDIT_COST = 2;
 export async function checkAndAllocateCredits(user) {
   await connectDB();
 
@@ -54,6 +55,7 @@ export async function checkAndAllocateCredits(user) {
   }
   const session = await mongoose.startSession();
   session.startTransaction();
+  let committed = false;
 
   try {
     // 1. Create transaction
@@ -77,22 +79,25 @@ export async function checkAndAllocateCredits(user) {
     ).lean();
 
     await session.commitTransaction();
-    session.endSession();
+    committed = true;
 
     revalidatePath("/doctors");
     revalidatePath("/appointments");
 
     return updatedUser;
   } catch (err) {
-    await session.abortTransaction();
-    session.endSession();
+    if (!committed) {
+      await session.abortTransaction();
+    }
     console.error("💥 Credit allocation failed:", err.message);
     return null;
+  } finally {
+    session.endSession(); // Safe to call always
   }
 }
 
 export async function deductCreditsForAppointment(userId, doctorId) {
-  const session = await Mongoose.startSession();
+  const session = await mongoose.startSession();
   try {
     session.startTransaction();
 

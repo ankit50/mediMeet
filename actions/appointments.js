@@ -167,7 +167,7 @@ export async function bookAppointment(formData) {
 
   try {
     // Get the patient user
-    connectDB();
+    await connectDB();
     const patient = await User.findOne({
       clerkUserId: userId,
       role: "PATIENT",
@@ -190,13 +190,13 @@ export async function bookAppointment(formData) {
 
     // Check if the doctor exists and is verified
     const doctor = await User.findOne({
-      id: doctorId,
+      _id: doctorId,
       role: "DOCTOR",
       verificationStatus: "VERIFIED",
     });
 
     if (!doctor) {
-      throw new Error("Doctor not found or not verified");
+      throw new Error("Doctor not found or not verifiedd");
     }
 
     // Check if the patient has enough credits (2 credits per appointment)
@@ -224,7 +224,7 @@ export async function bookAppointment(formData) {
       ],
     });
 
-    if (overlappingAppointment) {
+    if (overlappingAppointment.length > 0) {
       throw new Error("This time slot is already booked");
     }
 
@@ -233,8 +233,8 @@ export async function bookAppointment(formData) {
 
     // Deduct credits from patient and add to doctor
     const { success, error } = await deductCreditsForAppointment(
-      patient.id,
-      doctor.id
+      patient._id,
+      doctor._id
     );
 
     if (!success) {
@@ -243,8 +243,8 @@ export async function bookAppointment(formData) {
 
     // Create the appointment with the video session ID
     const appointment = await Appointment.create({
-      patientId: patient.id,
-      doctorId: doctor.id,
+      patient: patient._id,
+      doctor: doctor._id,
       startTime,
       endTime,
       patientDescription,
