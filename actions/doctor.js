@@ -109,7 +109,20 @@ export async function getDoctorAvailability() {
       doctor: doctor._id,
     }).sort({ startTime: 1 });
 
-    return { slots: availabilitySlots };
+    // ✅ Manually extract fields to ensure a plain object
+    const plainSlots = availabilitySlots.map((slot) => ({
+      id: slot._id.toString(), // convert ObjectId to string
+      doctor: slot.doctor.toString(),
+      startTime: slot.startTime.toISOString(),
+      endTime: slot.endTime.toISOString(),
+      status: slot.status,
+      createdAt: slot.createdAt?.toISOString?.() || null,
+      updatedAt: slot.updatedAt?.toISOString?.() || null,
+    }));
+
+    return { slots: plainSlots };
+
+    return { slots: plainSlots };
   } catch (error) {
     throw new Error("Failed to fetch availability slots " + error.message);
   }
@@ -122,21 +135,42 @@ export async function getDoctorAppointments() {
   if (!userId) {
     throw new Error("Unauthorized");
   }
+
   try {
     await connectDB();
+
     const doctor = await User.findOne({
       clerkUserId: userId,
       role: "DOCTOR",
     });
+
     if (!doctor) {
       throw new Error("Doctor not found");
     }
-    const appointments = await Appointment.find({
+
+    const appointmentsDocs = await Appointment.find({
       doctor: doctor._id,
       status: { $in: ["SCHEDULED"] },
     })
       .populate("patient")
       .sort({ startTime: 1 });
+
+    const appointments = appointmentsDocs.map((doc) => ({
+      _id: doc._id.toString(),
+      doctor: doc.doctor.toString(),
+      startTime: doc.startTime,
+      endTime: doc.endTime,
+      status: doc.status,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+      patient: {
+        _id: doc.patient._id.toString(),
+        name: doc.patient.name,
+        email: doc.patient.email,
+        // Include other required fields from patient
+      },
+    }));
+
     return { appointments };
   } catch (error) {
     throw new Error("Failed to fetch appointments " + error.message);
