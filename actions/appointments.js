@@ -319,8 +319,8 @@ export async function generateVideoToken(formData) {
 
     // Verify the user is either the doctor or the patient for this appointment
     if (
-      appointment.doctorId !== user._id &&
-      appointment.patientId !== user._id
+      appointment.doctor.toString() !== user._id.toString() &&
+      appointment.patient.toString() !== user._id.toString()
     ) {
       throw new Error("You are not authorized to join this call");
     }
